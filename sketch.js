@@ -1,130 +1,106 @@
-const Engine = Matter.Engine;
-const World = Matter.World;
-const Bodies = Matter.Bodies;
-const Constraint = Matter.Constraint;
+var database ,dog,dog1,dog2
+var position
+//var form
+var feed,add
+var foodobject
+var Feedtime
+var Lastfeed
+//Create variables here
 
-var engine, world;
-var holder,polygon,ground;
-var stand1,stand2;
-var polygon;
-var slingShot;
-var polygon_img;
-function preload(){
-  polygon_img=loadImage("polygon.png");
+function preload()
+
+{
+  dogimg1 = loadImage("images/dogImg.png")
+  dogimg2 = loadImage("images/dogImg1.png")
+  //load images here
+  bedroomImg = loadImage("images/Bed Room.png")
+  gardenImg = loadImage("images/Garden.png")
+  washroomImg = loadImage("images/Wash Room.png")
 }
+
 function setup() {
-  createCanvas(900,400);
-  engine = Engine.create();
-  world = engine.world;
-  Engine.run(engine);
-  ground = new Ground();
-  stand1 = new Stand(390,300,250,10);
-  stand2 = new Stand(700,200,200,10);
+	createCanvas(700, 700);
+  database = firebase.database();
+  console.log(database);
  
-  //level one
-  block1 = new Block(300,275,30,40);
-  block2 = new Block(330,275,30,40);
-  block3 = new Block(360,275,30,40);
-  block4 = new Block(390,275,30,40);
-  block5 = new Block(420,275,30,40);
-  block6 = new Block(450,275,30,40);
-  block7 = new Block(480,275,30,40);
-  //level two
-  block8 = new Block(330,235,30,40);
-  block9 = new Block(360,235,30,40);
-  block10 = new Block(390,235,30,40);
-  block11 = new Block(420,235,30,40);
-  block12 = new Block(450,235,30,40);
-  //level three
-  block13 = new Block(360,195,30,40);
-  block14 = new Block(390,195,30,40);
-  block15 = new Block(420,195,30,40);
-  //top
-  block16 = new Block(390,155,30,40);
-
-  //set 2 for second stand
-  //level one
-  blocks1 = new Block(640,175,30,40);
-  blocks2 = new Block(670,175,30,40);
-  blocks3 = new Block(700,175,30,40);
-  blocks4 = new Block(730,175,30,40);
-  blocks5 = new Block(760,175,30,40);
-  //level two
-  blocks6 = new Block(670,135,30,40);
-  blocks7 = new Block(700,135,30,40);
-  blocks8 = new Block(730,135,30,40);
-  //top
-  blocks9 = new Block(700,95,30,40);
-
-  //polygon holder with slings
-  polygon = Bodies.circle(50,200,20);
-  World.add(world,polygon);
-  
-  slingShot = new Slingshot(this.polygon,{x:100,y:200});
-
-}
-function draw() {
-  background(56,44,44); 
+  foodobject=new Food()
+  dog = createSprite(550,250,10,10);
+  dog.addImage(dogimg1)
+  dog.scale=0.2
  
-  //Engine.update(engine);
-  text(mouseX + ',' + mouseY, 10, 15);
-  textSize(20);
-  fill("lightyellow");
-  text("Drag the polygon to destroy the blocks",300,30);
-  textSize(10);
-  text("Press Space to get a second Chance to Play!!",650 ,350);
-  ground.display();
-  stand1.display();
-  stand2.display();
-  strokeWeight(2);
-  stroke(15);
-  fill("skyblue");
-  block1.display();
-  block2.display();
-  block3.display();
-  block4.display();
-  block5.display();
-  block6.display();
-  block7.display();
-  fill("pink");
-  block8.display();
-  block9.display();
-  block10.display();
-  block11.display();
-  block12.display();
-  fill("turquoise");
-  block13.display();
-  block14.display();
-  block15.display();
-  fill("grey");
-  block16.display();
-  fill("skyblue");
-  blocks1.display();
-  blocks2.display();
-  blocks3.display();
-  blocks4.display();
-  blocks5.display();
-  fill("turquoise");
-  blocks6.display();
-  blocks7.display();
-  blocks8.display();
-  fill("pink")
-  blocks9.display();
-  fill("gold");
-  imageMode(CENTER)
-  image(polygon_img ,polygon.position.x,polygon.position.y,40,40);
+  var dogo = database.ref('Food');
+  dogo.on("value", readPosition, showError);
+  feed = createButton("FEED DRAGO MILK")
+  feed.position(600,100)
+  feed.mousePressed(FeedDog)
+  add = createButton("ADD FOOD")
+  add.position(400,100)
+  add.mousePressed(AddFood)
 
-  slingShot.display();
+
+} 
+
+function draw(){
+ background(46,139,87);
+
+ foodobject.display()
+ 
+ drawSprites();
   
+ fill(255,255,254);
+ textSize(15);
+
+
+ fedtime=database.ref('FeedTime')
+ fedtime.on("value",function(data){ Lastfeed=data.val(); });
+ if(Lastfeed>=12)
+ {
+   text("Last Feed :" + Lastfeed%12 + "PM", 150,100);
+ }else if(Lastfeed ===0 )
+ {
+   text("Last Feed : 12 AM" , 150,100)
+ }else
+ {
+   text("Last Feed :" + Lastfeed + "AM", 150,100);
+ }
+
+drawSprites();
 }
-function mouseDragged(){
-  Matter.Body.setPosition(this.polygon,{x:mouseX,y:mouseY});
+function readPosition(data){
+  position = data.val();
+  foodobject.updateFoodStock(position)
 }
-function mouseReleased(){
-  slingShot.fly();
+
+function showError(){
+  console.log("Error in writing to the database");
 }
-function keyPressed(){
-  if(keyCode === 32){
-      slingShot.attach(this.polygon);
+
+function writePosition(nazo){
+  if(nazo>0){
+    nazo=nazo-1
   }
+  else{
+    nazo=0
+  }
+  database.ref('/').set({
+    'Food': nazo
+  })
+
+}
+function AddFood(){
+position++
+database.ref('/').update({
+  Food:position
+}
+
+)
+}
+function FeedDog(){
+
+dog.addImage(dogimg2)
+foodobject.updateFoodStock(foodobject.getFoodStock()-1)
+ database.ref('/').update({
+   Food:foodobject.getFoodStock(),
+   FeedTime:hour ()
+ })
 }
